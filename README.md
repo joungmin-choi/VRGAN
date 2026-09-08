@@ -69,16 +69,6 @@ Optional flags: `--train_ratio` (default 0.6), `--disc_steps` (5), `--gen_steps`
 3. **Phase 2 (GAN)** — with the VRNN frozen, a bidirectional-RNN generator with a learned time-decay combination is trained adversarially (discriminator:generator step ratio 5:1) against a one-layer RNN discriminator.
 4. **Score & threshold** — the anomaly score is `||x - VRNN_reconstruction|| + ||x - GAN_reconstruction||`; the threshold is the highest score observed among non-candidate (normal) points in the held-out validation split.
 
-## Notes on the PyTorch conversion
-The legacy TensorFlow script (`vae-gan-v6.py`) only performed reconstruction
-given an externally supplied mask/time-decay CSV; it did not identify anomaly
-candidates or compute an anomaly score/threshold itself. Converting it to
-match the paper's fully-unsupervised pipeline, a few issues were fixed along
-the way:
-* The encoder's second FC layer (`en2`) was computed but never fed into the GRU in the original script; both FC layers are now wired in sequence.
-* `vae_cost = -1 * marginal_likelihood + KL_divergence` used a reconstruction *loss* (already the negative log-likelihood) where a log-likelihood was expected, which made the optimizer maximize reconstruction error. Both terms are minimized directly in this version.
-* The smoothness regularizer now computes a proper Bernoulli KL divergence between consecutive decoder probabilities, rather than passing raw pre-sigmoid logits into `tf.keras.losses.KLDivergence`.
-* The VRNN is explicitly frozen (`requires_grad_(False)`, latent code sampled once under `no_grad`) during GAN training, matching the paper's Figure 4 step "(b) Freeze VRNN" — the original TF graph had no such freezing and could have let gradients from `g_loss` continue updating the encoder.
 
 ## Contact
 If you have any questions or problems, please contact **joungmin AT vt.edu**.
